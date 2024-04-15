@@ -1,0 +1,161 @@
+import React, { useState, useEffect } from 'react';
+
+function Music() {
+    const [tracks, setTracks] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [currentTrack, setCurrentTrack] = useState(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [favorites, setFavorites] = useState([]);
+    const [showFavorites, setShowFavorites] = useState(false);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await fetch('https://v1.nocodeapi.com/pravallika11/spotify/cDgdhoaRVqpvIkxf/search?q=all&type=track');
+                if (!response.ok) {
+                    throw new Error(HTTP error! Status: ${response.status});
+                }
+                const data = await response.json();
+                if (!data.tracks || !data.tracks.items) {
+                    throw new Error('Invalid response data format!');
+                }
+                setTracks(data.tracks.items);
+                setLoading(false);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    const handlePlayPause = (track) => {
+        if (!currentTrack || currentTrack.id !== track.id) {
+            if (currentTrack) {
+                stopAudio(currentTrack.id);
+            }
+            setCurrentTrack(track);
+            setIsPlaying(true);
+            playAudio(track.id);
+        } else {
+            setIsPlaying(!isPlaying);
+            toggleAudio(track.id);
+        }
+    };
+
+    const playAudio = (trackId) => {
+        const audio = document.getElementById(trackId);
+        if (audio) {
+            audio.play();
+        }
+    };
+
+    const stopAudio = (trackId) => {
+        const audio = document.getElementById(trackId);
+        if (audio) {
+            audio.pause();
+            audio.currentTime = 0;
+        }
+    };
+
+    const toggleAudio = (trackId) => {
+        const audio = document.getElementById(trackId);
+        if (audio) {
+            if (audio.paused) {
+                audio.play();
+            } else {
+                audio.pause();
+            }
+        }
+    };
+
+    const toggleFavorite = (track) => {
+        if (favorites.some((fav) => fav.id === track.id)) {
+            setFavorites(favorites.filter((fav) => fav.id !== track.id));
+        } else {
+            setFavorites([...favorites, track]);
+        }
+    };
+
+    const toggleShowFavorites = () => {
+        setShowFavorites(!showFavorites);
+    };
+
+    if (loading) {
+        return (
+            <div className="text-center mt-5">
+                <div className="spinner-border text-dark" role="status"></div>
+                <span className='fs-4'>Loading...</span>
+            </div>
+        );
+    }
+
+    return (
+        <div>
+            <div className="row mt-4 mx-4">
+                {showFavorites ? (
+                    favorites.map((track, index) => (
+                        <div className="col-lg-3 col-md-4 col-sm-6 my-4" key={index}>
+                            <div className="container">
+                                <div className="card h-75">
+                                    {track.album && track.album.images.length > 0 && (
+                                        <img src={track.album.images[0].url} className="card-img-top" alt={track.name} />
+                                    )}
+                                    <div className="card-body">
+                                        <h5 className="card-title">{track.name}</h5>
+                                        <p className="card-text">
+                                            Artists: {track.artists.map((artist) => artist.name).join(', ')}
+                                        </p>
+                                        <p className="card-text">Album: {track.album.name}</p>
+                                    </div>
+                                    <button className='favorite' onClick={() => toggleFavorite(track)}>
+                                        <i className="fa fa-heart fs-3 text-danger"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    tracks.map((track, index) => (
+                        <div className="col-lg-3 col-md-4 col-sm-6 my-4" key={index}>
+                            <div className="container">
+                                <div className="card h-75">
+                                    {track.album && track.album.images.length > 0 && (
+                                        <img src={track.album.images[0].url} className="card-img-top" alt={track.name} />
+                                    )}
+                                    <div className="card-body">
+                                        <h5 className="card-title">{track.name}</h5>
+                                        <p className="card-text">
+                                            Artists: {track.artists.map((artist) => artist.name).join(', ')}
+                                        </p>
+                                        <p className="card-text">Album: {track.album.name}</p>
+                                        {track.preview_url && (
+                                            <React.Fragment>
+                                                <audio id={track.id} src={track.preview_url} type="audio/mpeg"></audio>
+                                                <button onClick={() => handlePlayPause(track)} className='fs-4 bg-success text-light'>
+                                                    {currentTrack && currentTrack.id === track.id && isPlaying ? <i className="fa fa-pause"></i> : <i className="fa fa-play"></i>}
+                                                </button>
+                                            </React.Fragment>
+                                        )}
+                                        {!track.preview_url && (
+                                            <p className="text-muted">Track not playable</p>
+                                        )}
+                                    </div>
+                                    <button className='favorite' onClick={() => toggleFavorite(track)}>
+                                        <i className={fa fa-heart fs-3 ${favorites.some((fav) => fav.id === track.id) ? 'text-danger' : 'text-secondary'}}></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+            <div className="navbar fixed-bottom bg-light">
+                <button className="btn btn-link" onClick={toggleShowFavorites}>Favorites</button>
+            </div>
+        </div>
+    );
+}
+
+export default Music;
